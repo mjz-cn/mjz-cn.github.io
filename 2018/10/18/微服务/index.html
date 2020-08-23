@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="generator" content="Hexo 4.2.1"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>微服务 - MJZ</title><meta description="背景业务发展，功能太多，项目臃肿，迭代太慢 架构演进"><meta property="og:type" content="blog"><meta property="og:title" content="微服务"><meta property="og:url" content="http://yoursite.com/2018/10/18/%E5%BE%AE%E6%9C%8D%E5%8A%A1/"><meta property="og:site_name" content="MJZ"><meta property="og:description" content="背景业务发展，功能太多，项目臃肿，迭代太慢 架构演进"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="http://yoursite.com/img/og_image.png"><meta property="article:published_time" content="2018-10-18T05:13:00.000Z"><meta property="article:modified_time" content="2020-08-23T08:18:49.506Z"><meta property="article:author" content="文哲思"><meta property="article:tag" content="微服务"><meta property="twitter:card" content="summary"><meta property="twitter:image" content="/img/og_image.png"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"http://yoursite.com/2018/10/18/%E5%BE%AE%E6%9C%8D%E5%8A%A1/"},"headline":"MJZ","image":["http://yoursite.com/img/og_image.png"],"datePublished":"2018-10-18T05:13:00.000Z","dateModified":"2020-08-23T08:18:49.506Z","author":{"@type":"Person","name":"文哲思"},"description":"背景业务发展，功能太多，项目臃肿，迭代太慢 架构演进"}</script><link rel="canonical" href="http://yoursite.com/2018/10/18/%E5%BE%AE%E6%9C%8D%E5%8A%A1/"><link rel="icon" href="/img/favicon.svg"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/font-awesome/5.12.0/css/all.min.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/highlight.js/9.12.0/styles/atom-one-light.min.css"><link rel="stylesheet" href="https://fonts.loli.net/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><!--!--><!--!--><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/lightgallery/1.6.8/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/justifiedGallery/3.7.0/css/justifiedGallery.min.css"><script src="https://cdnjs.loli.net/ajax/libs/pace/1.0.2/pace.min.js"></script></head><body class="is-2-column"><nav class="navbar navbar-main"><div class="container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/">MJZ</a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">首页</a><a class="navbar-item" href="/archives">归档</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/2019/12/11/%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99/">参考资料</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-8-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta size-small is-uppercase level is-mobile"><div class="level-left"><div class="level-item has-text-grey" datetime="{date_xml(page.date)}">发布于：2018-10-18</div><span class="level-item"> 文哲思 </span><span class="level-item"><a class="link-muted" href="/categories/%E5%B7%A5%E7%A8%8B%E6%8A%80%E6%9C%AF/">工程技术</a></span><span class="level-item">6 分钟 读完 (大约 879 个字)</span></div></div><h1 class="title is-3 is-size-4-mobile">微服务</h1><div class="content"><h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>业务发展，功能太多，项目臃肿，迭代太慢</p>
+<p>架构演进</p>
+<a id="more"></a>
+
+<h2 id="http-rpc"><a href="#http-rpc" class="headerlink" title="http rpc"></a>http rpc</h2><p>服务间通信基本上是通过两种方式进行通信的http和rpc</p>
+<ul>
+<li><p>应用场景<br>  HTTP由于其通用性，接入代价小的特点主要用于外部服务调用<br>  内部服务间的调用主要使用RPC</p>
+</li>
+<li><p>性能<br>  RPC 和 HTTP的数据都是通过TCP进行传输<br>  通用定义的http1.1协议的tcp报文包含信息比RPC使用的传输协议的tcp报文会多很多，所以其在传输效率上RPC一般来说会高一些</p>
+</li>
+<li><p>接入方式<br>  HTTP由于其通用性，基本上所有的语言都可以非常方便的访问HTTP服务，服务方不需要了解业务方使用的何种语言。<br>  RPC可能需要为业务方提供多个开发语言版本的SDK，使业务方可以像在本地一样调用服务，但服务方的开发量较大。<br>  基本上各个语言都有性能良好的HTTP客户端库，而RPC的需要服务方针对业务方来提供经过测试的性能良好的SDK。</p>
+</li>
+</ul>
+<p>统一的rpc框架</p>
+<ol>
+<li>服务标准化：上下游交互通过标准SDK形式划分，通过SDK提供统一的、一站式的服务发现、容错调度、监控采集等，进而降低服务开发、运维成本。</li>
+<li>内置服务发现：对于未接入DiSF的模块来说，带来的收益是显而易见的：节点管理标准化、可运维化、快速扩容。</li>
+<li>故障摘除：类似下游上线、机器故障、下游过载超时 导致的业务错误将不再存在，对提升业务自身的SLA有较大收益。</li>
+<li>标准化日志输出&amp;采集：RPC通道日志将以标准化的形式打印并采集，统一集成到把脉、Metrics等，降低业务的运维负担。</li>
+</ol>
+<h2 id="微服务"><a href="#微服务" class="headerlink" title="微服务"></a>微服务</h2><ul>
+<li><p>特点：<br>应用按业务拆分成服务<br>各个服务均可独立部署<br>服务可被多个应用共享<br>服务之间可以通信</p>
+</li>
+<li><p>好处：<br>架构上系统更加清晰<br>核心模块稳定，以服务组件为单位进行升级，避免了频繁发布带来的风险<br>开发管理方便<br>单独团队维护、工作分明，职责清晰<br>业务复用、代码复用<br>非常容易拓展</p>
+</li>
+<li><p>挑战：<br>  服务间依赖关系复杂<br>  更加方便的负载均衡<br>  动态扩容，缩容<br>  故障摘除<br>  服务降级</p>
+</li>
+</ul>
+<h3 id="服务治理"><a href="#服务治理" class="headerlink" title="服务治理"></a>服务治理</h3><p><strong>服务注册</strong></p>
+<ul>
+<li>服务自注册</li>
+<li>第三方注册</li>
+</ul>
+<p><strong>服务发现</strong></p>
+<ul>
+<li>服务端发现</li>
+<li>客户端发现</li>
+</ul>
+<p>注册发现：动态扩缩容，上游零感知<br>负载均衡：加权轮询策略<br>自动探活：10s级健康探测，分钟级故障机器摘除<br>依赖管理：管理自身消费了哪些下游服务</p>
+<hr>
+<p>参考</p>
+<ol>
+<li><a href="https://blog.csdn.net/suifeng3051/article/details/53992560">浅谈服务治理与微服务</a></li>
+<li><a href="http://www.infoq.com/cn/articles/background-architecture-and-solutions-of-service-discovery">谈服务发现的背景、架构以及落地方案</a></li>
+<li><a href="https://www.jianshu.com/p/525d17eae766">SOA服务治理方案</a></li>
+<li><a href="https://www.jianshu.com/p/8d2cfa1fa633">微服务介绍</a></li>
+<li>[浅谈服务治理与微服务]</li>
+</ol>
+</div><div class="article-tags size-small mb-4"><span class="mr-2">#</span><a class="link-muted mr-2" rel="tag" href="/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/">微服务</a></div><!--!--></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/2018/11/06/%E8%AE%B0%E4%B8%80%E6%AC%A1%E8%BF%9E%E6%8E%A5%E6%B1%A0%E9%94%99%E8%AF%AF/"><i class="level-item fas fa-chevron-left"></i><span class="level-item">记一次连接池错误</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2018/08/09/america_app_store/"><span class="level-item">申请美国区APP Store账号</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><div class="card"><div class="card-content"><h3 class="title is-5">评论</h3><div id="comment-container"></div><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/gitalk/1.6.2/gitalk.css"><script src="https://cdnjs.loli.net/ajax/libs/gitalk/1.6.2/gitalk.min.js"></script><script>var gitalk = new Gitalk({
+            id: 'b4b3c3e764e4bc30d5bcb558205e7de6',
+            repo: 'gitcomment',
+            owner: 'mjz-cn',
+            clientID: '658c65c1d7c320c954dc',
+            clientSecret: '6dc7a2602f2f71971609da6b699247f4d5278c05',
+            admin: ["mjz-cn"],
+            createIssueManually: false,
+            distractionFreeMode: false,
+            perPage: 20,
+            pagerDirection: 'last',
+            
+            
+            enableHotKey: true
+        })
+        gitalk.render('comment-container')</script></div></div></div><!--!--><div class="column column-right is-4-tablet is-4-desktop is-4-widescreen  order-3 is-sticky"><div class="card widget" id="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="is-flex" href="#背景"><span class="mr-2">1</span><span>背景</span></a></li><li><a class="is-flex" href="#http-rpc"><span class="mr-2">2</span><span>http rpc</span></a></li><li><a class="is-flex" href="#微服务"><span class="mr-2">3</span><span>微服务</span></a><ul class="menu-list"><li><a class="is-flex" href="#服务治理"><span class="mr-2">3.1</span><span>服务治理</span></a></li></ul></li></ul></div></div></div></div></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/">MJZ</a><p class="size-small"><span>&copy; 2020 文哲思</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a></p></div><div class="level-end"></div></div></div></footer><script src="https://cdnjs.loli.net/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="https://cdnjs.loli.net/ajax/libs/moment.js/2.22.2/moment-with-locales.min.js"></script><script>moment.locale("zh-CN");</script><script>var IcarusThemeSettings = {
+            site: {
+                url: 'http://yoursite.com',
+                external_link: {"enable":true,"exclude":[]}
+            },
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="https://cdnjs.loli.net/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" defer></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><!--!--><!--!--><script src="https://cdnjs.loli.net/ajax/libs/lightgallery/1.6.8/js/lightgallery.min.js" defer></script><script src="https://cdnjs.loli.net/ajax/libs/justifiedGallery/3.7.0/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
+        });</script></body></html>

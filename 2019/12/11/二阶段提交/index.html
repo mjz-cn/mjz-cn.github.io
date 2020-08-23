@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="generator" content="Hexo 4.2.1"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>阶段提交 - MJZ</title><meta description="ACID原则ACID是一种描述一致性的原则，通常出现在数据库系统中。  A Atomicity: 原子性，事务中的所有操作要么不成功，要么都成功 C Consistency: 一致性，外界访问数据库中的数据时，不会访问到事物的中间状态，只会访问到最终的状态 I Isolation: 隔离性，事务可以并发执行，不会互相影响。 D Duration: 持久性，一旦事务提交成功，状态的改变是持久的，不会"><meta property="og:type" content="blog"><meta property="og:title" content="阶段提交"><meta property="og:url" content="http://yoursite.com/2019/12/11/%E4%BA%8C%E9%98%B6%E6%AE%B5%E6%8F%90%E4%BA%A4/"><meta property="og:site_name" content="MJZ"><meta property="og:description" content="ACID原则ACID是一种描述一致性的原则，通常出现在数据库系统中。  A Atomicity: 原子性，事务中的所有操作要么不成功，要么都成功 C Consistency: 一致性，外界访问数据库中的数据时，不会访问到事物的中间状态，只会访问到最终的状态 I Isolation: 隔离性，事务可以并发执行，不会互相影响。 D Duration: 持久性，一旦事务提交成功，状态的改变是持久的，不会"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="http://yoursite.com/img/og_image.png"><meta property="article:published_time" content="2019-12-11T02:58:00.000Z"><meta property="article:modified_time" content="2020-08-23T08:18:49.503Z"><meta property="article:author" content="文哲思"><meta property="twitter:card" content="summary"><meta property="twitter:image" content="/img/og_image.png"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"http://yoursite.com/2019/12/11/%E4%BA%8C%E9%98%B6%E6%AE%B5%E6%8F%90%E4%BA%A4/"},"headline":"MJZ","image":["http://yoursite.com/img/og_image.png"],"datePublished":"2019-12-11T02:58:00.000Z","dateModified":"2020-08-23T08:18:49.503Z","author":{"@type":"Person","name":"文哲思"},"description":"ACID原则ACID是一种描述一致性的原则，通常出现在数据库系统中。  A Atomicity: 原子性，事务中的所有操作要么不成功，要么都成功 C Consistency: 一致性，外界访问数据库中的数据时，不会访问到事物的中间状态，只会访问到最终的状态 I Isolation: 隔离性，事务可以并发执行，不会互相影响。 D Duration: 持久性，一旦事务提交成功，状态的改变是持久的，不会"}</script><link rel="canonical" href="http://yoursite.com/2019/12/11/%E4%BA%8C%E9%98%B6%E6%AE%B5%E6%8F%90%E4%BA%A4/"><link rel="icon" href="/img/favicon.svg"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/font-awesome/5.12.0/css/all.min.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/highlight.js/9.12.0/styles/atom-one-light.min.css"><link rel="stylesheet" href="https://fonts.loli.net/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><!--!--><!--!--><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/lightgallery/1.6.8/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/justifiedGallery/3.7.0/css/justifiedGallery.min.css"><script src="https://cdnjs.loli.net/ajax/libs/pace/1.0.2/pace.min.js"></script></head><body class="is-2-column"><nav class="navbar navbar-main"><div class="container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/">MJZ</a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">首页</a><a class="navbar-item" href="/archives">归档</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/2019/12/11/%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99/">参考资料</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-8-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta size-small is-uppercase level is-mobile"><div class="level-left"><div class="level-item has-text-grey" datetime="{date_xml(page.date)}">发布于：2019-12-11</div><span class="level-item"> 文哲思 </span><span class="level-item"><a class="link-muted" href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F/">分布式</a></span><span class="level-item">5 分钟 读完 (大约 706 个字)</span></div></div><h1 class="title is-3 is-size-4-mobile">阶段提交</h1><div class="content"><h2 id="ACID原则"><a href="#ACID原则" class="headerlink" title="ACID原则"></a>ACID原则</h2><p>ACID是一种描述一致性的原则，通常出现在数据库系统中。</p>
+<ul>
+<li>A Atomicity: 原子性，事务中的所有操作要么不成功，要么都成功</li>
+<li>C Consistency: 一致性，外界访问数据库中的数据时，不会访问到事物的中间状态，只会访问到最终的状态</li>
+<li>I Isolation: 隔离性，事务可以并发执行，不会互相影响。</li>
+<li>D Duration: 持久性，一旦事务提交成功，状态的改变是持久的，不会失效。</li>
+</ul>
+<p>单机事务一般是需要满足ACID的。</p>
+<p>分布式事务需要多节点协作来完成一个事务，其实现方式和单机事务有很大不同，也很难满足ACID原则，实现方式和单机事务的实现方式也有很大不同。目前分布式事务是通过阶段提交来实现的，阶段提交分为二阶段和三阶段提交。</p>
+<a id="more"></a>
+
+<h2 id="二阶段提交"><a href="#二阶段提交" class="headerlink" title="二阶段提交"></a>二阶段提交</h2><p>可将其分解为预提交和正式提交两个阶段。</p>
+<ul>
+<li>预提交：协调者（Coordinator）发起提交某个事务的申请，各参与执行者（Participant）需要尝试提交并反馈是否能完成。</li>
+<li>正式提交：协调者如果得到所有执行者的成功答复，则发出正式提交请求。如果成功完成，则算法执行成功。</li>
+</ul>
+<p>在提交过程如果出现问题，事务就需要回退。</p>
+<p>优点是实现简单，但缺点很明显就是它的整个过程是阻塞的，需要等到所有节点完成才能执行下一步，会使性能较差。当一个节点出现问题，可能会造成事务一直无法提交。在第二个阶段协调者和参与者出现故障，也会造成数据不一致的情况。</p>
+<h2 id="三阶段提交"><a href="#三阶段提交" class="headerlink" title="三阶段提交"></a>三阶段提交</h2><p>三阶段提交其实就是对二阶段提交的扩展，分为三步</p>
+<ul>
+<li>尝试提交 协调者会询问各个节点是否能参与投票，如果不能就不会再执行下去</li>
+<li>预提交 如果所有节点都返回可以执行投票，所有的参与者就会尝试进行提交并且反馈是否能够完成。</li>
+<li>正式提交 协调者如果得到所有执行者的成功答复，则发出正式提交申请，如果成功完成，则本次事务成功</li>
+</ul>
+<p>三阶段提交只是在一定程度上缓解了提交冲突问题，还是无法保证数据一致性的问题。一致性可以参考Paxos</p>
+</div><!--!--></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/2019/12/11/%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99/"><i class="level-item fas fa-chevron-left"></i><span class="level-item">参考资料</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2019/12/10/ZooKeeper%E6%A6%82%E8%A6%81/"><span class="level-item">ZooKeeper介绍</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><div class="card"><div class="card-content"><h3 class="title is-5">评论</h3><div id="comment-container"></div><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/gitalk/1.6.2/gitalk.css"><script src="https://cdnjs.loli.net/ajax/libs/gitalk/1.6.2/gitalk.min.js"></script><script>var gitalk = new Gitalk({
+            id: '2fd2ad7bc9fe814110a043eb1f881def',
+            repo: 'gitcomment',
+            owner: 'mjz-cn',
+            clientID: '658c65c1d7c320c954dc',
+            clientSecret: '6dc7a2602f2f71971609da6b699247f4d5278c05',
+            admin: ["mjz-cn"],
+            createIssueManually: false,
+            distractionFreeMode: false,
+            perPage: 20,
+            pagerDirection: 'last',
+            
+            
+            enableHotKey: true
+        })
+        gitalk.render('comment-container')</script></div></div></div><!--!--><div class="column column-right is-4-tablet is-4-desktop is-4-widescreen  order-3 is-sticky"><div class="card widget" id="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="is-flex" href="#ACID原则"><span class="mr-2">1</span><span>ACID原则</span></a></li><li><a class="is-flex" href="#二阶段提交"><span class="mr-2">2</span><span>二阶段提交</span></a></li><li><a class="is-flex" href="#三阶段提交"><span class="mr-2">3</span><span>三阶段提交</span></a></li></ul></div></div></div></div></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/">MJZ</a><p class="size-small"><span>&copy; 2020 文哲思</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a></p></div><div class="level-end"></div></div></div></footer><script src="https://cdnjs.loli.net/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="https://cdnjs.loli.net/ajax/libs/moment.js/2.22.2/moment-with-locales.min.js"></script><script>moment.locale("zh-CN");</script><script>var IcarusThemeSettings = {
+            site: {
+                url: 'http://yoursite.com',
+                external_link: {"enable":true,"exclude":[]}
+            },
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="https://cdnjs.loli.net/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" defer></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><!--!--><!--!--><script src="https://cdnjs.loli.net/ajax/libs/lightgallery/1.6.8/js/lightgallery.min.js" defer></script><script src="https://cdnjs.loli.net/ajax/libs/justifiedGallery/3.7.0/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
+        });</script></body></html>

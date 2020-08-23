@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="generator" content="Hexo 4.2.1"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>Flink源码分析-Checkpoint - MJZ</title><meta description="Keyword Checkpoint Snapshot Barrier State Savepoint  CheckpointCoordinator定时checkpointCheckpointCoordinator会启动一个定时任务触发checkpoint"><meta property="og:type" content="blog"><meta property="og:title" content="Flink源码分析-Checkpoint"><meta property="og:url" content="http://yoursite.com/2019/11/27/Flink%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90-Checkpoint/"><meta property="og:site_name" content="MJZ"><meta property="og:description" content="Keyword Checkpoint Snapshot Barrier State Savepoint  CheckpointCoordinator定时checkpointCheckpointCoordinator会启动一个定时任务触发checkpoint"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="http://yoursite.com/img/og_image.png"><meta property="article:published_time" content="2019-11-26T16:00:00.000Z"><meta property="article:modified_time" content="2020-08-23T08:18:49.495Z"><meta property="article:author" content="文哲思"><meta property="article:tag" content="Flink源码"><meta property="article:tag" content="笔记"><meta property="article:tag" content="Flink"><meta property="twitter:card" content="summary"><meta property="twitter:image" content="/img/og_image.png"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"http://yoursite.com/2019/11/27/Flink%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90-Checkpoint/"},"headline":"MJZ","image":["http://yoursite.com/img/og_image.png"],"datePublished":"2019-11-26T16:00:00.000Z","dateModified":"2020-08-23T08:18:49.495Z","author":{"@type":"Person","name":"文哲思"},"description":"Keyword Checkpoint Snapshot Barrier State Savepoint  CheckpointCoordinator定时checkpointCheckpointCoordinator会启动一个定时任务触发checkpoint"}</script><link rel="canonical" href="http://yoursite.com/2019/11/27/Flink%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90-Checkpoint/"><link rel="icon" href="/img/favicon.svg"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/font-awesome/5.12.0/css/all.min.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/highlight.js/9.12.0/styles/atom-one-light.min.css"><link rel="stylesheet" href="https://fonts.loli.net/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><!--!--><!--!--><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/lightgallery/1.6.8/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/justifiedGallery/3.7.0/css/justifiedGallery.min.css"><script src="https://cdnjs.loli.net/ajax/libs/pace/1.0.2/pace.min.js"></script></head><body class="is-2-column"><nav class="navbar navbar-main"><div class="container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/">MJZ</a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">首页</a><a class="navbar-item" href="/archives">归档</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/2019/12/11/%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99/">参考资料</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-8-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta size-small is-uppercase level is-mobile"><div class="level-left"><div class="level-item has-text-grey" datetime="{date_xml(page.date)}">发布于：2019-11-27</div><span class="level-item"> 文哲思 </span><span class="level-item"><a class="link-muted" href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F/">分布式</a><span> / </span><a class="link-muted" href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F/%E8%AE%A1%E7%AE%97/">计算</a></span><span class="level-item">8 分钟 读完 (大约 1228 个字)</span></div></div><h1 class="title is-3 is-size-4-mobile">Flink源码分析-Checkpoint</h1><div class="content"><h2 id="Keyword"><a href="#Keyword" class="headerlink" title="Keyword"></a>Keyword</h2><ul>
+<li>Checkpoint</li>
+<li>Snapshot</li>
+<li>Barrier</li>
+<li>State</li>
+<li>Savepoint</li>
+</ul>
+<h2 id="CheckpointCoordinator定时checkpoint"><a href="#CheckpointCoordinator定时checkpoint" class="headerlink" title="CheckpointCoordinator定时checkpoint"></a>CheckpointCoordinator定时checkpoint</h2><p>CheckpointCoordinator会启动一个定时任务触发checkpoint</p>
+<a id="more"></a>
+
+<ol>
+<li><p>JobMaster启动时，会调用<code>Execution.scheduleForExecution</code> 切换到Running状态时，启动Checkpoint定时任务</p>
+</li>
+<li><p>当<code>CheckpointCoordinatorDeActivator.jobStatusChanges</code>被调用时，<code>CheckpointCoordinator.startCheckpointScheduler</code>开启CheckpointCoordinator定时任务</p>
+</li>
+<li><p><code>CheckpointCoordinatorDeActivator.triggerCheckpoint</code>会被定时触发</p>
+</li>
+<li><p><code>checkpointID = checkpointIdCounter.getAndIncrement();</code>递增生成ID</p>
+</li>
+<li><p>给checkpoint设置超时时间, 超时之后退出此次checkpoint，取消之前的调度任务，重新调度checkpoint</p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">	&#x2F;&#x2F; schedule the timer that will clean up the expired checkpoints</span><br><span class="line">final Runnable canceller &#x3D; () -&gt; &#123;</span><br><span class="line">    synchronized (lock) &#123;</span><br><span class="line">        &#x2F;&#x2F; only do the work if the checkpoint is not discarded anyways</span><br><span class="line">        &#x2F;&#x2F; note that checkpoint completion discards the pending checkpoint object</span><br><span class="line">        if (!checkpoint.isDiscarded()) &#123;</span><br><span class="line">            LOG.info(&quot;Checkpoint &#123;&#125; of job &#123;&#125; expired before completing.&quot;, checkpointID, job);</span><br><span class="line"></span><br><span class="line">            failPendingCheckpoint(checkpoint, CheckpointFailureReason.CHECKPOINT_EXPIRED);</span><br><span class="line">            pendingCheckpoints.remove(checkpointID);</span><br><span class="line">            rememberRecentCheckpointId(checkpointID);</span><br><span class="line">			&#x2F;&#x2F; 取消之前的调度任务，重新调度checkpoint</span><br><span class="line">            triggerQueuedRequests();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>触发source算子checkpoint</p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; send the messages to the tasks that trigger their checkpoint</span><br><span class="line">for (Execution execution: executions) &#123;</span><br><span class="line">    if (props.isSynchronous()) &#123;</span><br><span class="line">        execution.triggerSynchronousSavepoint(checkpointID, timestamp, checkpointOptions, advanceToEndOfTime);</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        execution.triggerCheckpoint(checkpointID, timestamp, checkpointOptions);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>通过Rpc TaskExecutorGateway.triggerCheckpoint 执行 StreamTask.performCheckpoint 并且生成初始的CheckpointBarrier</p>
+</li>
+<li><p>下游在收到CheckpointBarrier后，会执行StreamTask.triggerCheckpointOnBarrier执行StreamTask.performCheckpoint 并且继续向下游发送CheckpointBarrier</p>
+</li>
+<li><p>StreamTask.performCheckpoint最终会通过CheckpointingOperation.executeCheckpointing来执行实际的checkpoint</p>
+</li>
+</ol>
+<h2 id="下游算子收到CheckpointBarrier的过程"><a href="#下游算子收到CheckpointBarrier的过程" class="headerlink" title="下游算子收到CheckpointBarrier的过程"></a>下游算子收到CheckpointBarrier的过程</h2><ol>
+<li><p>StreamOneInputProcessor.processInput 获取下一个StreamElement</p>
+</li>
+<li><p>StreamTaskNetworkInput.pollNextNullable 调用 CheckpointedInputGate.pollNext来获取下一个BufferOrEvent</p>
+</li>
+<li><p>CheckpointedInputGate.pollNext，如果当前的buffer不为空，从buffer取BufferOrEvent；否则从InputGate取</p>
+</li>
+<li><p>判断当前BufferOrEvent是否处于阻塞状态，如果处于阻塞状态，将BufferOrEvent添加到buffer中</p>
+</li>
+<li><p>如果为BufferOrEvent为Buffer直接返回，buffer表示上游发的正常内容</p>
+</li>
+<li><p>如果为CheckpointBarrier, 调用CheckpointBarrierAligner.processBarrier处理checkpoint事件</p>
+</li>
+<li><p>CheckpointBarrierAligner.processBarrier中，如果当前算子的上游只有一个的话，会直接触发notifyCheckpoint</p>
+</li>
+<li><p>对barrier事件的处理又可以分为以下几种情况：</p>
+<ol>
+<li>barrier为新的事件，则会开启对应通道的对齐beginNewAlignment操作，此操作会阻塞对应channel的元素处理逻辑</li>
+<li>如果当前算子已经收到的有barrier，判断barrier是否等于算子当前正在处理的currentCheckpointId, 如果相等，则执行阻塞操作onBarrier</li>
+<li>如果barrierId &gt; currentCheckpointId，说明currentCheckpointId出现异常。上报异常，并且充值算子checkpoint状态</li>
+<li>如果barrierId &lt; currentCheckpointId 不做任何处理</li>
+</ol>
+</li>
+<li><p>如果收到所有的barrier，开始执行CheckpointBarrierHandler.notifyCheckpoint</p>
+</li>
+<li><p>StreamTask.triggerCheckpointOnBarrier</p>
+</li>
+<li><p>StreamTask.performCheckpoint 继续向下游发送<code>operatorChain.broadcastCheckpointBarrier</code> checkpoint barrier广播，执行快照<code>checkpointState()</code></p>
+</li>
+</ol>
+<h2 id="Snapshot操作"><a href="#Snapshot操作" class="headerlink" title="Snapshot操作"></a>Snapshot操作</h2><ol>
+<li><p>CheckpointingOperation.executeCheckpointing 会对当前StreamTask相关联的所有Operator挨个执行CheckpointingOperation.checkpointStreamOperator</p>
+</li>
+<li><p>AbstractStreamOperator.snapshotState会对以下几种类型的状态都执行快照</p>
+<ol>
+<li>用户算子状态</li>
+<li>managed keyedState</li>
+<li>raw keystate <code>snapshotContext.getKeyedStateStreamFuture()</code></li>
+<li>managed operator state</li>
+<li>raw operator state <code>snapshotContext.getOperatorStateStreamFuture()</code></li>
+</ol>
+</li>
+<li><p>AbstractUdfStreamOperator.snapshotState调用StreamingFunctionUtils.snapshotFunctionState对UserFunction执行快照操作</p>
+</li>
+<li><p>StreamingFunctionUtils.trySnapshotFunctionState中会实际调用自定义的snapshotState方法</p>
+</li>
+<li><p>自定义的方法只有实现了CheckpointedFunction 或者 ListCheckpointed 才能执行snapshot操作</p>
+</li>
+</ol>
+<h2 id="Task发送Checkpoint-Ack"><a href="#Task发送Checkpoint-Ack" class="headerlink" title="Task发送Checkpoint Ack"></a>Task发送Checkpoint Ack</h2><p>Task在完成当前的快照之后会向JobMaster的CheckpointCoordinator回复一条Ack消息</p>
+<ol>
+<li><p>StreamTask.executeCheckpointing 调用当前Task的所有Operator的snapshotState方法</p>
+</li>
+<li><p>执行异步操作AsyncCheckpointRunnable</p>
+</li>
+<li><p>等待snapshot结果</p>
+</li>
+<li><p>完成之后，调用reportCompletedSnapshotStates，获取 <code>TaskStateManager taskStateManager = owner.getEnvironment().getTaskStateManager();</code></p>
+</li>
+<li><p>taskStateManager.reportTaskStateSnapshots</p>
+</li>
+<li><p>存储localStateStore.storeLocalState存储localstate</p>
+</li>
+<li><p>RpcCheckpointResponder.acknowledgeCheckpoint通过Rpc向CheckpointCoordinator发送ack消息表示本次checkpoint操作完成</p>
+</li>
+</ol>
+<h2 id="CheckpointCoordinator响应Ack消息"><a href="#CheckpointCoordinator响应Ack消息" class="headerlink" title="CheckpointCoordinator响应Ack消息"></a>CheckpointCoordinator响应Ack消息</h2><ol>
+<li><p>CheckpointCoordinatorGateway的实现类为JobMaster</p>
+</li>
+<li><p>task在完成checkpoint之后通过rpc方式调用JobMaster.acknowledgeCheckpoint发送ack</p>
+</li>
+<li><p>JobMaster调用SchedulerNG.acknowledgeCheckpoint</p>
+</li>
+<li><p><code>ExecutionGraph.getCheckpointCoordinator()</code>获取对应的CheckpointCoordinator</p>
+</li>
+<li><p>将CheckpointCoordinator对这条消息的处理放入到一个线程池中进行处理</p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">ioExecutor.execute(() -&gt; &#123;</span><br><span class="line">			try &#123;</span><br><span class="line">				checkpointCoordinator.receiveAcknowledgeMessage(ackMessage, taskManagerLocationInfo);</span><br><span class="line">			&#125; catch (Throwable t) &#123;</span><br><span class="line">				log.warn(&quot;Error while processing checkpoint acknowledgement message&quot;, t);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;);</span><br></pre></td></tr></table></figure></li>
+<li><p>CheckpointCoordinator会对ack消息做以下校验<br> <code>PendingCheckpoint checkpoint = pendingCheckpoints.get(checkpointId);</code></p>
+<ol>
+<li>checkpoint存在并且没被丢弃，执行正常的处理逻辑<code>checkpoint.acknowledgeTask</code></li>
+<li>存在但是被丢弃，抛出异常</li>
+<li>不存在，执行丢弃<code>discardSubtaskState()</code></li>
+</ol>
+</li>
+<li><p>PendingCheckpoint分别保存了<code>notYetAcknowledgedTasks</code>和<code>acknowledgedTasks</code></p>
+</li>
+<li><p>PendingCheckpoint.acknowledgeTask处理收到的ack消息，上报checkpoint统计消息。并且更新内部状态</p>
+<ol>
+<li><code>notYetAcknowledgedTasks</code>未收到ack的所有sub task</li>
+<li><code>acknowledgedTasks</code>已收到的task</li>
+<li><code>operatorStates</code>Operator状态</li>
+</ol>
+</li>
+<li><p>PendingCheckpoint.acknowledgeTask根据checkpointId返回三种状态，<code>SUCCESS</code> <code>DUPLICATE</code> <code>UNKNOWN</code> <code>DISCARDED</code></p>
+</li>
+</ol>
+<p>当ack为<code>SUCCESS</code>时</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; 收到全部的ack消息</span><br><span class="line">if (checkpoint.isFullyAcknowledged()) &#123;</span><br><span class="line">	&#x2F;&#x2F; 执行完成操作</span><br><span class="line">	completePendingCheckpoint(checkpoint);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol>
+<li><p><code>CompletedCheckpoint completedCheckpoint = pendingCheckpoint.finalizeCheckpoint();</code> </p>
+</li>
+<li><p>checkpoint在切换状态时</p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">try &#123;</span><br><span class="line">	&#x2F;&#x2F; 生成savepoint，包含了本次checkpoint的所有状态</span><br><span class="line">    &#x2F;&#x2F; write out the metadata</span><br><span class="line">    final Savepoint savepoint &#x3D; new SavepointV2(checkpointId, operatorStates.values(), masterState);</span><br><span class="line">    final CompletedCheckpointStorageLocation finalizedLocation;</span><br><span class="line">	&#x2F;&#x2F; 写到statebackend</span><br><span class="line">    try (CheckpointMetadataOutputStream out &#x3D; targetLocation.createMetadataOutputStream()) &#123;</span><br><span class="line">        Checkpoints.storeCheckpointMetadata(savepoint, out);</span><br><span class="line">        finalizedLocation &#x3D; out.closeAndFinalizeCheckpoint();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    CompletedCheckpoint completed &#x3D; new CompletedCheckpoint();</span><br><span class="line">    ...</span><br><span class="line">	&#x2F;&#x2F; 切换状态</span><br><span class="line">    &#x2F;&#x2F; mark this pending checkpoint as disposed, but do NOT drop the state</span><br><span class="line">    dispose(false);</span><br><span class="line">    return completed;</span><br><span class="line">&#125;</span><br><span class="line">	&#96;&#96;&#96; </span><br><span class="line">3. 调用&#96;triggerQueuedRequests()&#96;来触发下一次的checkpoint</span><br><span class="line">4. &#96;dropSubsumedCheckpoints(checkpointId);&#96; 丢弃之前的pending状态的checkpoint</span><br><span class="line"></span><br><span class="line">5.	Execution.TaskManagerGateway.notifyCheckpointComplete通知所有Task本次checkpoint完成</span><br><span class="line"></span><br><span class="line">	&#96;&#96;&#96; </span><br><span class="line">	for (ExecutionVertex ev : tasksToCommitTo) &#123;</span><br><span class="line">			Execution ee &#x3D; ev.getCurrentExecutionAttempt();</span><br><span class="line">			if (ee !&#x3D; null) &#123;</span><br><span class="line">				ee.notifyCheckpointComplete(checkpointId, timestamp);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<h2 id="监听Checkpoint完成"><a href="#监听Checkpoint完成" class="headerlink" title="监听Checkpoint完成"></a>监听Checkpoint完成</h2><p>当operator收到checkpoint完成事件之后，就可以做一些额外操作，例如：</p>
+<ol>
+<li>Kafka提交offset</li>
+<li>TwoPhaseCommitSinkFunction</li>
+</ol>
+</div><div class="article-tags size-small mb-4"><span class="mr-2">#</span><a class="link-muted mr-2" rel="tag" href="/tags/Flink%E6%BA%90%E7%A0%81/">Flink源码</a><a class="link-muted mr-2" rel="tag" href="/tags/%E7%AC%94%E8%AE%B0/">笔记</a><a class="link-muted mr-2" rel="tag" href="/tags/Flink/">Flink</a></div><!--!--></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/2019/11/29/Flink%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90-Graph/"><i class="level-item fas fa-chevron-left"></i><span class="level-item">Flink源码分析-Graph</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2019/11/26/Flink%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90-%E7%AA%97%E5%8F%A3/"><span class="level-item">Flink源码分析-窗口</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><div class="card"><div class="card-content"><h3 class="title is-5">评论</h3><div id="comment-container"></div><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/gitalk/1.6.2/gitalk.css"><script src="https://cdnjs.loli.net/ajax/libs/gitalk/1.6.2/gitalk.min.js"></script><script>var gitalk = new Gitalk({
+            id: '5d8c2d03496c5a4ddc1f673dc82c1034',
+            repo: 'gitcomment',
+            owner: 'mjz-cn',
+            clientID: '658c65c1d7c320c954dc',
+            clientSecret: '6dc7a2602f2f71971609da6b699247f4d5278c05',
+            admin: ["mjz-cn"],
+            createIssueManually: false,
+            distractionFreeMode: false,
+            perPage: 20,
+            pagerDirection: 'last',
+            
+            
+            enableHotKey: true
+        })
+        gitalk.render('comment-container')</script></div></div></div><!--!--><div class="column column-right is-4-tablet is-4-desktop is-4-widescreen  order-3 is-sticky"><div class="card widget" id="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="is-flex" href="#Keyword"><span class="mr-2">1</span><span>Keyword</span></a></li><li><a class="is-flex" href="#CheckpointCoordinator定时checkpoint"><span class="mr-2">2</span><span>CheckpointCoordinator定时checkpoint</span></a></li><li><a class="is-flex" href="#下游算子收到CheckpointBarrier的过程"><span class="mr-2">3</span><span>下游算子收到CheckpointBarrier的过程</span></a></li><li><a class="is-flex" href="#Snapshot操作"><span class="mr-2">4</span><span>Snapshot操作</span></a></li><li><a class="is-flex" href="#Task发送Checkpoint-Ack"><span class="mr-2">5</span><span>Task发送Checkpoint Ack</span></a></li><li><a class="is-flex" href="#CheckpointCoordinator响应Ack消息"><span class="mr-2">6</span><span>CheckpointCoordinator响应Ack消息</span></a></li><li><a class="is-flex" href="#监听Checkpoint完成"><span class="mr-2">7</span><span>监听Checkpoint完成</span></a></li></ul></div></div></div></div></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/">MJZ</a><p class="size-small"><span>&copy; 2020 文哲思</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a></p></div><div class="level-end"></div></div></div></footer><script src="https://cdnjs.loli.net/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="https://cdnjs.loli.net/ajax/libs/moment.js/2.22.2/moment-with-locales.min.js"></script><script>moment.locale("zh-CN");</script><script>var IcarusThemeSettings = {
+            site: {
+                url: 'http://yoursite.com',
+                external_link: {"enable":true,"exclude":[]}
+            },
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="https://cdnjs.loli.net/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" defer></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><!--!--><!--!--><script src="https://cdnjs.loli.net/ajax/libs/lightgallery/1.6.8/js/lightgallery.min.js" defer></script><script src="https://cdnjs.loli.net/ajax/libs/justifiedGallery/3.7.0/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
+        });</script></body></html>

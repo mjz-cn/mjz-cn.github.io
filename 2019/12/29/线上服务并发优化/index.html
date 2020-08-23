@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="generator" content="Hexo 4.2.1"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>服务性能优化过程 - MJZ</title><meta description="背景组内有好几个线上服务，除了业务逻辑不一样，请求处理过程基本上都是一致的。这些服务的执行逻辑都非常简单，但是有几个问题:  单机QPS很低，需要很多台机器 99分位耗时比理论上的长很多 在单机qps达到上限时，服务器的负载却非常低"><meta property="og:type" content="blog"><meta property="og:title" content="服务性能优化过程"><meta property="og:url" content="http://yoursite.com/2019/12/29/%E7%BA%BF%E4%B8%8A%E6%9C%8D%E5%8A%A1%E5%B9%B6%E5%8F%91%E4%BC%98%E5%8C%96/"><meta property="og:site_name" content="MJZ"><meta property="og:description" content="背景组内有好几个线上服务，除了业务逻辑不一样，请求处理过程基本上都是一致的。这些服务的执行逻辑都非常简单，但是有几个问题:  单机QPS很低，需要很多台机器 99分位耗时比理论上的长很多 在单机qps达到上限时，服务器的负载却非常低"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="http://yoursite.com/assets/img/drunk_service0.jpg"><meta property="article:published_time" content="2019-12-29T04:13:00.000Z"><meta property="article:modified_time" content="2020-08-23T08:18:49.510Z"><meta property="article:author" content="文哲思"><meta property="article:tag" content="并发"><meta property="article:tag" content="异步"><meta property="article:tag" content="案例"><meta property="twitter:card" content="summary"><meta property="twitter:image" content="/assets/img/drunk_service0.jpg"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"http://yoursite.com/2019/12/29/%E7%BA%BF%E4%B8%8A%E6%9C%8D%E5%8A%A1%E5%B9%B6%E5%8F%91%E4%BC%98%E5%8C%96/"},"headline":"MJZ","image":["http://yoursite.com/assets/img/drunk_service0.jpg"],"datePublished":"2019-12-29T04:13:00.000Z","dateModified":"2020-08-23T08:18:49.510Z","author":{"@type":"Person","name":"文哲思"},"description":"背景组内有好几个线上服务，除了业务逻辑不一样，请求处理过程基本上都是一致的。这些服务的执行逻辑都非常简单，但是有几个问题:  单机QPS很低，需要很多台机器 99分位耗时比理论上的长很多 在单机qps达到上限时，服务器的负载却非常低"}</script><link rel="canonical" href="http://yoursite.com/2019/12/29/%E7%BA%BF%E4%B8%8A%E6%9C%8D%E5%8A%A1%E5%B9%B6%E5%8F%91%E4%BC%98%E5%8C%96/"><link rel="icon" href="/img/favicon.svg"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/font-awesome/5.12.0/css/all.min.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/highlight.js/9.12.0/styles/atom-one-light.min.css"><link rel="stylesheet" href="https://fonts.loli.net/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><!--!--><!--!--><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/lightgallery/1.6.8/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/justifiedGallery/3.7.0/css/justifiedGallery.min.css"><script src="https://cdnjs.loli.net/ajax/libs/pace/1.0.2/pace.min.js"></script></head><body class="is-2-column"><nav class="navbar navbar-main"><div class="container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/">MJZ</a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">首页</a><a class="navbar-item" href="/archives">归档</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/2019/12/11/%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99/">参考资料</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-8-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta size-small is-uppercase level is-mobile"><div class="level-left"><div class="level-item has-text-grey" datetime="{date_xml(page.date)}">发布于：2019-12-29</div><span class="level-item"> 文哲思 </span><span class="level-item"><a class="link-muted" href="/categories/%E5%B7%A5%E7%A8%8B%E6%8A%80%E6%9C%AF/">工程技术</a></span><span class="level-item">24 分钟 读完 (大约 3564 个字)</span></div></div><h1 class="title is-3 is-size-4-mobile">服务性能优化过程</h1><div class="content"><h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>组内有好几个线上服务，除了业务逻辑不一样，请求处理过程基本上都是一致的。这些服务的执行逻辑都非常简单，但是有几个问题:</p>
+<ol>
+<li>单机QPS很低，需要很多台机器</li>
+<li>99分位耗时比理论上的长很多</li>
+<li>在单机qps达到上限时，服务器的负载却非常低</li>
+</ol>
+<a id="more"></a>
+
+<p>上面的这些问题在财大气粗的公司面前都不是问题啊，性能不够加机器！<strong>性能不够加机器！</strong> 上游再一次过来反映超时问题时，为了壮年程序员的尊严，这次刚好有时间决定不再单纯的加机器，要把这个程序优化一下，用一次屠龙技。</p>
+<p><strong>技术栈：</strong></p>
+<pre><code>语言：java
+通信方式：thrift，server模式为THsHaServer
+redis客户端：jedis
+模型：xgboost
+执行环境：docker，8核 8G
+缓存集群：通信协议为redis，但实现方式和redis不一样</code></pre><p><a href="#result">优化后结果</a></p>
+<h2 id="优化过程"><a href="#优化过程" class="headerlink" title="优化过程"></a>优化过程</h2><p>想要提升程序的性能，首先需要找到程序的瓶颈所在，然后有针对的去进行优化。</p>
+<h3 id="流程分析"><a href="#流程分析" class="headerlink" title="流程分析"></a>流程分析</h3><p><strong>优化前流程图</strong></p>
+<p><img src="/assets/img/drunk_service0.jpg" alt="优化前流程图"></p>
+<p>这个流程图省略了业务处理逻辑，只展示了各个线程之间的交互关系。构造redis请求的那部分逻辑，其实使用了两个forkjoin线程池，但它们两个的逻辑非常类似，为了简化把它们合并到一个流程中了。流程图中有两个深红色的步骤，很明显的看出两个明显能影响性能的地方。</p>
+<p>结合服务的执行环境，可以总结出以下问题：</p>
+<p><strong>线程数过多</strong></p>
+<p>由于操作系统对线程的抢占式调度，线程频繁的上下文切换会带来几个问题：</p>
+<ol>
+<li>系统指令执行时间增长，对应的指标值为<code>cpu.sys</code>，造成cpu执行时间的浪费</li>
+<li>单位时间内分配给执行用户态指令的时间减少，对应的指标为<code>cpu.user</code></li>
+<li>综上可看出，其不仅使机器负载升高，也会使执行单次任务耗时增长</li>
+</ol>
+<p><strong>两个阻塞</strong></p>
+<p>流程图中标红的两个步骤在执行时都会阻塞线程。其中thrift-server是在阻塞等待所有的redis结果，forkjoin中是在阻塞等待redis返回结果，网络通信使用的是<em>同步io模式</em>。  </p>
+<p>线程从运行状态切换为阻塞状态时，会发生一次线程上下文切换并且线程需要等待被重新调度。这是在操作系统层面的影响。</p>
+<p>假设服务同时接收到40个请求，从流程图中可以看出，此时服务最多同时能发送86个redis请求，而要想让服务能通时执行40个任务，则必须要同时发送2000 = 40 * 20个redis请求。如果将forkjoin的最大线程数调整到2000明显是不可以的，实际在这个服务最初的版本中是没有限制forkjoin的最大线程数的，所以在服务负载升高时，服务器开启的总线程数也一直在飙升，此时就会收到疯狂的服务器负载报警，且请求调用耗时也非常高。</p>
+<ol>
+<li>由于阻塞线程的操作，要想增大程序的并发就只能多开启线程，而线程数量多了就会影响程序的性能</li>
+<li>使用同步io方式来发送redis请求，同时发送的redis请求数量非常有限。这不仅严重拉低了qps，而且也使99分位耗时增长。</li>
+</ol>
+<p><strong>任务无限期等待</strong></p>
+<p>从上面也可以看出任务没有超时的限制，可以无限期的等待下去。这会造成以下影响：</p>
+<ol>
+<li>如果客户端没有设置超时时间，可能会无限期等待下去，可能会拖垮客户端。</li>
+<li>如果客户端因为超时而取消了这次任务，那么这个任务再被执行是没任何意义的，而且还会挤占其它任务的执行时间，甚至造成程序的雪崩。</li>
+</ol>
+<p><strong>总结：</strong></p>
+<p>从前面的分析可以看出，现在程序的瓶颈主要是查询redis过程，其次是thrift-server中线程的阻塞逻辑。</p>
+<h3 id="流程优化"><a href="#流程优化" class="headerlink" title="流程优化"></a>流程优化</h3><p>由于程序的JVM GC监控指标在正常范围内，并且改动架构还需要重新观测GC情况，所以先做程序架构上的改造。</p>
+<p><strong>查询缓存过程</strong></p>
+<p>这主要是一个网络优化的过程，业务层通常是从以下几点入手：</p>
+<ol>
+<li>减少通信次数，即合并多个请求成一个网络请求。因为我们公司的缓存集群实现方式和redis不一样，使用pipeline、mget对性能提升有限，甚至降低。</li>
+<li>使用异步IO，不仅能减少使用的线程数，而且能增大同时发送的redis请求数量。</li>
+</ol>
+<p>当前使用的redis client是jedis，用一个开源的异步redis client <a href="https://github.com/lettuce-io/lettuce-core">lettuce</a>代替，它的底层使用的neety。</p>
+<p><strong>thrift-server</strong></p>
+<p>使用AsyncProcessor来将其改造成异步。</p>
+<p><strong>任务增加超时限制</strong></p>
+<p>给最上层的CompletableFuture设置一个超时逻辑，当任务执行时间超时就取消CompletableFuture的执行，并将这个取消通知逐层传递下去。</p>
+<p><strong>流程优化后的流程图：</strong></p>
+<p><img src="/assets/img/drunk_service1.jpg" alt="优化后流程图"></p>
+<blockquote>
+<p>上面这个流程还是有几个薄弱环节，在一次偶发事件上，出了一次问题，<a href="/2020/02/18/服务超时问题/">相应文章</a>。</p>
+</blockquote>
+<p>有了新的流程图，代码改造就纯粹是一个按图实现。为了减少改造过程中引入新的bug，要秉持一个原则：<strong>尽量复用之前的代码</strong>。</p>
+<h3 id="压测"><a href="#压测" class="headerlink" title="压测"></a>压测</h3><p>压测工具使用的QA组提供的工具<code>goperf2</code>，使用<code>jprofiler</code>监测jvm进程执行情况。jprofiler这个工具非常重要，通过它的可视化界面能帮助我掌握jvm进程中所有线程的执行状态，然后根据这个状态再去调优一些参数。</p>
+<p>测试过程非常枯燥，但看着指标的提升，又非常有成就感。</p>
+<p>初步的压测结果证明了前面的优化思路是正确的，还需要再填一些小坑道路才能平坦。压测过程中发现的问题：</p>
+<ol>
+<li>当在压测时，服务给出空响应耗时特别长。空响应是不做任何业务逻辑，收到请求就直接返回。<br> 原因：selector线程处理不过来了。</li>
+<li>压测程序跑了一会之后，服务器上出现大量time_wait，就提示不能在分配连接地址了。典型的tcp面试题，是因为端口不够分配或者进程的句柄数达到最大。</li>
+<li>服务器上也出现了大量的time_wait。lettuce连接池参数问题，使连接不停的关闭。</li>
+<li>单次访问耗时不稳定。jvm类加载过程、连接池初始化、线程池初始化的问题。</li>
+<li>连接池borrowObject耗时很长。参数优化。</li>
+<li>正则表达式性能问题，原先代码逻辑耗时</li>
+<li>java stream耗时</li>
+<li>hashmap不停的新建</li>
+</ol>
+<p><a name="result"></a> 最终压测结果：</p>
+<table><thead><tr><th ><div >类型</div></th><th ><div >qps</div></th><th ><div >平均响应时间</div></th><th ><div >90分位</div></th><th><div ><span>95分位</span></div></th><th><div ><span>99分位</span></div></th><th><div ><span>99.9分位</span></div></th></tr></thead><tbody><tr ><td >优化前只取45个实时特征</td><td ><span >2951</span></td><td >6.761</td><td >7</td><td>10</td><td>50</td><td>55</td></tr><tr ><td >优化后<span>只取45个实时特征</span></td><td >11781</td><td >2.1</td><td >3</td><td>3</td><td>4</td><td>9</td></tr><tr ><td ><span>优化后</span><span>只取45个实时特征，三个进程</span></td><td ><p>17218</p></td><td >2.25</td><td >3</td><td>3</td><td>7</td><td>11</td></tr><tr ><td><span>优化前预测</span></td><td>1774</td><td>14</td><td>19</td><td>35</td><td>61</td><td>68</td></tr><tr ><td><span>优化后预测</span></td><td>2702</td><td>9.2</td><td>11</td><td>12</td><td>14</td><td>17</td></tr><tr ><td><span><span>优化后预测 </span></span>三进程</td><td>4705</td><td>8.5</td><td>13</td><td>14</td><td>17</td><td>24</td></tr></tbody></table>
+
+<h3 id="压测中用到的命令"><a href="#压测中用到的命令" class="headerlink" title="压测中用到的命令"></a>压测中用到的命令</h3><p>查看tcp 半连接和全连接队列情况 <code>netstat -s | egrep &quot;listen|LISTEN&quot; ;ss -lnt</code></p>
+<p>统计tcp连接各个状态数量 <code>netstat -n | grep &lt;port&gt; | awk &#39;/^tcp/ {++S[$NF]} END {for(a in S) print a, S[a]}&#39;</code></p>
+<h2 id="jstack线程数和jvm进程开启线程数不一致"><a href="#jstack线程数和jvm进程开启线程数不一致" class="headerlink" title="jstack线程数和jvm进程开启线程数不一致"></a>jstack线程数和jvm进程开启线程数不一致</h2><p>经过对程序架构、代码实现的优化，新版的程序终于上线了。上游也不再反馈超时了，机器负载也不高了，饭量也大了。</p>
+<p>但是某天再看监控的时候，发现JVM进程竟然开启了800多个线程，远远超出理论上50个以内的线程数量。</p>
+<blockquote>
+<p>就简单的说下分析过程和原因吧。</p>
+</blockquote>
+<h3 id="定位过程"><a href="#定位过程" class="headerlink" title="定位过程"></a>定位过程</h3><p><strong>验证监控是否出错</strong></p>
+<p>通过这几个命令来查看进程的线程状态和数量, 发现和监控一致，证明监控没有问题。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">ps -eo nlwp,pid,args --sort nlwp</span><br><span class="line">top -H -p &lt;pid&gt;</span><br><span class="line">ps -o nlwp &lt;pid&gt;</span><br><span class="line">ls &#x2F;proc&#x2F;&lt;pid&gt;&#x2F;task | wc -l</span><br><span class="line">ls &#x2F;proc&#x2F;&lt;pid&gt;&#x2F;status | grep thread</span><br></pre></td></tr></table></figure>
+
+<p><strong>验证jstack问题</strong></p>
+<p>通过查阅jstack文档发现，使用<code>jstack &lt;pid&gt;</code>只会输出受jvm进程管理的线程，只有<code>jstack -m &lt;pid&gt;</code>才能输出<code>.so</code>库开启的线程，但是<code>jstack -m</code>打印的堆栈信息不全。</p>
+<p><strong>定位开启非jvm线程的代码</strong></p>
+<p>打印进程堆栈，<code>gstack &lt;pid&gt;</code>，发现除了jvm线程之外，大多线程的堆栈信息都是一样的且都包含了<code>libomp.so</code>。这个库是用于c/c++中的多线程库，相关资料<a href="https://www.openmp.org/wp-content/uploads/openmp-4.5.pdf">openmp</a>。也就说程序中有代码调用<code>libomp.so</code>开启了大量的额外线程。</p>
+<p>而开启线程肯定是要经过系统调用的，通过<code>strace</code>命令可以跟踪到是哪个线程开启的<code>libomp</code>线程。在这个过程中，需要<code>jstack</code>打印出jvm线程堆栈，通过比较线程id可以准确定位具体的jvm线程。</p>
+<p>最后定位到是算法组同学给出的模型jar包调用的。</p>
+<p><strong>xgboost</strong></p>
+<p>定位到算法组给出的模型jar包的问题之后，开始浏览他们的代码，最后发现根源问题在与xgboost。相关代码如下图。</p>
+<p><img src="/assets/img/omp1.png" alt=""></p>
+<p>jvm线程再调用<code>Predict</code>方法时都会开启<code>omp_get_thread_num</code>个线程，但是一个jvm线程只会开启<code>omp_get_thread_num</code>个线程，最终的总的xgboost线程数量刚好与<code>count(jvm thread) * omp_get_thread_num</code>吻合。</p>
+<p>除了xgboost c库的问题之外，官方的java库也存在一个问题。在使用xgboost的时候，一般只会创建一个<code>Booster</code>对象，然后多线程调用<code>booster.predict()</code>方法，最终都会调用一个同步方法。</p>
+<p><img src="/assets/img/xgboost1.jpg" alt=""></p>
+<p>这个方法是个同步的，在多线程调用的时候，同时只有一个线程能执行预测方法，其它线程进入到阻塞状态。在没有竞争的情况下，<code>predict()</code>方法的耗时在1ms左右，当竞争激励时，方法耗时甚至能增加到20ms，且没有上限。这在对请求耗时敏感的业务场景下，是一个不可接受的问题。</p>
+<h3 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h3><p>解决方案有两种：</p>
+<ol>
+<li><p>程序在启动前添加环境变量，例如<code>OMP_THREAD_LIMIT=1 control.sh start</code>。用来限制omp开启的线程数量。</p>
+</li>
+<li><p>使用纯java实现的<a href="https://github.com/komiya-atsushi/xgboost-predictor-java">xgboost库</a>来替换xgoobst的官方库，</p>
+</li>
+</ol>
+<p>这个服务还遇到过一个堆外内存问题，不过定位过程足够再写一篇文章了。</p>
+<h2 id="进一步的优化"><a href="#进一步的优化" class="headerlink" title="进一步的优化"></a>进一步的优化</h2><p>至此，对服务的优化效果已经达到预期。但其实还可以做出进一步的优化，但耗费的精力就非常大了。</p>
+<p>对程序优化的本质是考察程序员对操作系统相关知识点的理解程度：</p>
+<ol>
+<li>进程／线程原理，线程是操作系统执行的最小单位，如果真正的理解这句话，那么再做任何架构方面的优化就非常容易了</li>
+<li>IO原理，相关知识点：存储、总线、DMA</li>
+<li>线程之间的同步最终也会反映到线程的执行</li>
+</ol>
+<p>更近一步的优化思路，由于多线程之间势必会涉及到资源的竞争，这一般是通过锁来进行同步。那么找到对程序中的同步点并且尽量消除这些同步点对程序的性能会有非常大的提升。优化同步点是一个非常关键但也非常耗费精力的事情。  </p>
+<p>程序运行起来，那么肯定就是要接受输入并且处理再输出结果，那么追踪一条请求的数据走向，那么就能找到在完成一次请求的过程中，都有哪些同步条件发生了。而一个多线程程序是以线程池单位来完成整个程序的执行逻辑，线程池内的线程一般执行的是同样的逻辑。先粗粒度的来分析数据的同步关系，再分析一个线程池内线程之间的同步关系。</p>
+<p>单个进程不能避免锁竞争，可以通过开启多个进程来完成减少锁的影响。在这次的压测过程中，也测试了多进程网络服务的性能。多进程网络服务，可参考这篇<a href="/2020/01/01/多进程网络服务/">文章</a>。</p>
+<hr>
+<p>参考</p>
+<ol>
+<li><a href="https://tech.meituan.com/2015/12/10/performance-tuning-pattern.html">性能优化模式</a></li>
+<li>【书籍】现代操作系统</li>
+<li><a href="https://zhuanlan.zhihu.com/p/36224094">jstack的工作原理</a></li>
+<li><a href="https://www.openmp.org/wp-content/uploads/openmp-4.5.pdf">openmp</a></li>
+<li><a href="https://bisqwit.iki.fi/story/howto/openmp/">Guide into OpenMP</a></li>
+</ol>
+</div><div class="article-tags size-small mb-4"><span class="mr-2">#</span><a class="link-muted mr-2" rel="tag" href="/tags/%E5%B9%B6%E5%8F%91/">并发</a><a class="link-muted mr-2" rel="tag" href="/tags/%E5%BC%82%E6%AD%A5/">异步</a><a class="link-muted mr-2" rel="tag" href="/tags/%E6%A1%88%E4%BE%8B/">案例</a></div><!--!--></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/2020/01/01/%E5%A4%9A%E8%BF%9B%E7%A8%8B%E7%BD%91%E7%BB%9C%E6%9C%8D%E5%8A%A1/"><i class="level-item fas fa-chevron-left"></i><span class="level-item">多进程网络服务</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2019/12/23/flink-RichAsyncFunction/"><span class="level-item">Flink-异步operator</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><div class="card"><div class="card-content"><h3 class="title is-5">评论</h3><div id="comment-container"></div><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/gitalk/1.6.2/gitalk.css"><script src="https://cdnjs.loli.net/ajax/libs/gitalk/1.6.2/gitalk.min.js"></script><script>var gitalk = new Gitalk({
+            id: 'd3b5d02d569c1e603362be4456e83254',
+            repo: 'gitcomment',
+            owner: 'mjz-cn',
+            clientID: '658c65c1d7c320c954dc',
+            clientSecret: '6dc7a2602f2f71971609da6b699247f4d5278c05',
+            admin: ["mjz-cn"],
+            createIssueManually: false,
+            distractionFreeMode: false,
+            perPage: 20,
+            pagerDirection: 'last',
+            
+            
+            enableHotKey: true
+        })
+        gitalk.render('comment-container')</script></div></div></div><!--!--><div class="column column-right is-4-tablet is-4-desktop is-4-widescreen  order-3 is-sticky"><div class="card widget" id="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="is-flex" href="#背景"><span class="mr-2">1</span><span>背景</span></a></li><li><a class="is-flex" href="#优化过程"><span class="mr-2">2</span><span>优化过程</span></a><ul class="menu-list"><li><a class="is-flex" href="#流程分析"><span class="mr-2">2.1</span><span>流程分析</span></a></li><li><a class="is-flex" href="#流程优化"><span class="mr-2">2.2</span><span>流程优化</span></a></li><li><a class="is-flex" href="#压测"><span class="mr-2">2.3</span><span>压测</span></a></li><li><a class="is-flex" href="#压测中用到的命令"><span class="mr-2">2.4</span><span>压测中用到的命令</span></a></li></ul></li><li><a class="is-flex" href="#jstack线程数和jvm进程开启线程数不一致"><span class="mr-2">3</span><span>jstack线程数和jvm进程开启线程数不一致</span></a><ul class="menu-list"><li><a class="is-flex" href="#定位过程"><span class="mr-2">3.1</span><span>定位过程</span></a></li><li><a class="is-flex" href="#解决方案"><span class="mr-2">3.2</span><span>解决方案</span></a></li></ul></li><li><a class="is-flex" href="#进一步的优化"><span class="mr-2">4</span><span>进一步的优化</span></a></li></ul></div></div></div></div></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/">MJZ</a><p class="size-small"><span>&copy; 2020 文哲思</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a></p></div><div class="level-end"></div></div></div></footer><script src="https://cdnjs.loli.net/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="https://cdnjs.loli.net/ajax/libs/moment.js/2.22.2/moment-with-locales.min.js"></script><script>moment.locale("zh-CN");</script><script>var IcarusThemeSettings = {
+            site: {
+                url: 'http://yoursite.com',
+                external_link: {"enable":true,"exclude":[]}
+            },
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="https://cdnjs.loli.net/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" defer></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><!--!--><!--!--><script src="https://cdnjs.loli.net/ajax/libs/lightgallery/1.6.8/js/lightgallery.min.js" defer></script><script src="https://cdnjs.loli.net/ajax/libs/justifiedGallery/3.7.0/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
+        });</script></body></html>

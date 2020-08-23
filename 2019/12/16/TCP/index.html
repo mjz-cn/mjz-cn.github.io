@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="generator" content="Hexo 4.2.1"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>TCP - MJZ</title><meta description="介绍连接的生命周期 报文格式"><meta property="og:type" content="blog"><meta property="og:title" content="TCP"><meta property="og:url" content="http://yoursite.com/2019/12/16/TCP/"><meta property="og:site_name" content="MJZ"><meta property="og:description" content="介绍连接的生命周期 报文格式"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="http://yoursite.com/assets/img/TCP-Header-01.jpg"><meta property="og:image" content="http://yoursite.com/assets/img/tcp-sync-queue-and-accept-queue-small-1024x747.jpg"><meta property="og:image" content="http://yoursite.com/assets/img/tcp-window.png"><meta property="og:image" content="http://yoursite.com/assets/img/tcp-window1.jpg"><meta property="article:published_time" content="2019-12-16T04:43:00.000Z"><meta property="article:modified_time" content="2020-08-23T08:18:49.501Z"><meta property="article:author" content="文哲思"><meta property="article:tag" content="tcp"><meta property="article:tag" content="网络"><meta property="twitter:card" content="summary"><meta property="twitter:image" content="/assets/img/TCP-Header-01.jpg"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"http://yoursite.com/2019/12/16/TCP/"},"headline":"MJZ","image":["http://yoursite.com/assets/img/TCP-Header-01.jpg","http://yoursite.com/assets/img/tcp-sync-queue-and-accept-queue-small-1024x747.jpg","http://yoursite.com/assets/img/tcp-window.png","http://yoursite.com/assets/img/tcp-window1.jpg"],"datePublished":"2019-12-16T04:43:00.000Z","dateModified":"2020-08-23T08:18:49.501Z","author":{"@type":"Person","name":"文哲思"},"description":"介绍连接的生命周期 报文格式"}</script><link rel="canonical" href="http://yoursite.com/2019/12/16/TCP/"><link rel="icon" href="/img/favicon.svg"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/font-awesome/5.12.0/css/all.min.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/highlight.js/9.12.0/styles/atom-one-light.min.css"><link rel="stylesheet" href="https://fonts.loli.net/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><!--!--><!--!--><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/lightgallery/1.6.8/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/justifiedGallery/3.7.0/css/justifiedGallery.min.css"><script src="https://cdnjs.loli.net/ajax/libs/pace/1.0.2/pace.min.js"></script></head><body class="is-2-column"><nav class="navbar navbar-main"><div class="container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/">MJZ</a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">首页</a><a class="navbar-item" href="/archives">归档</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/2019/12/11/%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99/">参考资料</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-8-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta size-small is-uppercase level is-mobile"><div class="level-left"><div class="level-item has-text-grey" datetime="{date_xml(page.date)}">发布于：2019-12-16</div><span class="level-item"> 文哲思 </span><span class="level-item"><a class="link-muted" href="/categories/%E5%B7%A5%E7%A8%8B%E6%8A%80%E6%9C%AF/">工程技术</a><span> / </span><a class="link-muted" href="/categories/%E5%B7%A5%E7%A8%8B%E6%8A%80%E6%9C%AF/%E6%80%BB%E7%BB%93/">总结</a></span><span class="level-item">4 分钟 读完 (大约 650 个字)</span></div></div><h1 class="title is-3 is-size-4-mobile">TCP</h1><div class="content"><h2 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h2><p>连接的生命周期</p>
+<p>报文格式<br><img src="/assets/img/TCP-Header-01.jpg" alt=""></p>
+<a id="more"></a>
+
+<ul>
+<li>序列号 包的序列号，用于控制包的按序传送</li>
+<li>Ack server的回应，表示收到，用于可靠性传输</li>
+<li>tcp flags tcp 状态机</li>
+<li>window 流量控制</li>
+</ul>
+<p>通过三次握手建立连接，连接有半连接队列和全连接队列。如果发生dos攻击，会出现大量的<code>SYN_RCVD</code>状态，可通过服务端主动发送一个特殊的ack来进行探测对方是否是恶意客户端。连接队列如果满了的话，会出现<code>connection reset by peer</code>异常。当server收到client的ack时，会将连接放到全连接队列中等待accept，这个时候如果server没有accept connection并且client在持续发送数据，就会造成客户端重传数据卡住。</p>
+<p>client发送数据后，server可能会延迟回复ack 一般是配置为40ms</p>
+<h3 id="关键词"><a href="#关键词" class="headerlink" title="关键词"></a>关键词</h3><ul>
+<li>rtt 网络往返时间（round trip time）</li>
+<li>mss 最大分段大小 (maxium segment size)。tcp最大报文大小，不包含tcp header和option</li>
+<li>mtu 网络最大传输单元（maximum transmit unit）。多用于以太网口，如果要传输的数据包的大小超过mtu，有可能会丢弃包。</li>
+<li></li>
+</ul>
+<h2 id="三次握手"><a href="#三次握手" class="headerlink" title="三次握手"></a>三次握手</h2><p><img src="/assets/img/tcp-sync-queue-and-accept-queue-small-1024x747.jpg" alt=""></p>
+<p>握手过程<br>syn-&gt; syn ack -&gt; ack</p>
+<p>半连接队列 baklog</p>
+<p>全连接队列</p>
+<p>在连接队列满了的时候会出现 connection reset by peer</p>
+<h3 id="常见问题"><a href="#常见问题" class="headerlink" title="常见问题"></a>常见问题</h3><p>队列溢出</p>
+<p><strong>Connection reset by peer</strong> </p>
+<h3 id="队列溢出后的重传"><a href="#队列溢出后的重传" class="headerlink" title="队列溢出后的重传"></a>队列溢出后的重传</h3><h2 id="四次挥手"><a href="#四次挥手" class="headerlink" title="四次挥手"></a>四次挥手</h2><p>挥手过程，中间状态</p>
+<p>finish_wait_1<br>close_wait<br>finish_wait_2<br>last_ack<br>TIME_WAIT </p>
+<p>TIME_WAIT大量出现的话会造成不能创建连接</p>
+<h3 id="常见问题-1"><a href="#常见问题-1" class="headerlink" title="常见问题"></a>常见问题</h3><ol>
+<li><p>出现大量TIME_WAIT</p>
+</li>
+<li><p>为何四次挥手<br> fin -&gt; fin ack -&gt; fin -&gt; ack</p>
+</li>
+</ol>
+<h2 id="传输过程"><a href="#传输过程" class="headerlink" title="传输过程"></a>传输过程</h2><p><img src="/assets/img/tcp-window.png" alt=""><br><img src="/assets/img/tcp-window1.jpg" alt=""></p>
+<ul>
+<li>mss</li>
+<li>mtu maximum transmission unit</li>
+<li>delay ack</li>
+<li>nagle</li>
+<li></li>
+</ul>
+<h3 id="启动"><a href="#启动" class="headerlink" title="启动"></a>启动</h3><p>慢启动，逐渐增大流量</p>
+<h3 id="可靠"><a href="#可靠" class="headerlink" title="可靠"></a>可靠</h3><p>ack确认，重传<br>ack 实际确认直接，deplay ack。</p>
+<h3 id="流量控制"><a href="#流量控制" class="headerlink" title="流量控制"></a>流量控制</h3><p>窗口，拥塞</p>
+<h3 id="常见问题-2"><a href="#常见问题-2" class="headerlink" title="常见问题"></a>常见问题</h3><ul>
+<li>粘包</li>
+<li>丢包 加速</li>
+<li>队头阻塞（head-of-line blocking）</li>
+<li>dos攻击</li>
+</ul>
+<h2 id="调试工具"><a href="#调试工具" class="headerlink" title="调试工具"></a>调试工具</h2><hr>
+<p>参考</p>
+<ol>
+<li><a href="http://jm.taobao.org/2017/06/01/20170601/">最经典的TCP性能问题</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/37379780">TCP流量控制、拥塞控制</a></li>
+<li><a href="https://juejin.im/post/5c9f1dd651882567b4339bce">TCP之“滑动窗口”协议</a></li>
+<li><a href="https://coolshell.cn/articles/11564.html">TCP 的那些事儿</a></li>
+<li><a href="https://www.cnblogs.com/clovn/p/4911212.html">MAC地址表、ARP缓存表以及路由表</a></li>
+<li><a href="https://www.zhihu.com/question/21546408">ip地址 mac地址</a></li>
+</ol>
+</div><div class="article-tags size-small mb-4"><span class="mr-2">#</span><a class="link-muted mr-2" rel="tag" href="/tags/tcp/">tcp</a><a class="link-muted mr-2" rel="tag" href="/tags/%E7%BD%91%E7%BB%9C/">网络</a></div><!--!--></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/2019/12/23/flink-RichAsyncFunction/"><i class="level-item fas fa-chevron-left"></i><span class="level-item">Flink-异步operator</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2019/12/15/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/"><span class="level-item">分布式事务</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><div class="card"><div class="card-content"><h3 class="title is-5">评论</h3><div id="comment-container"></div><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/gitalk/1.6.2/gitalk.css"><script src="https://cdnjs.loli.net/ajax/libs/gitalk/1.6.2/gitalk.min.js"></script><script>var gitalk = new Gitalk({
+            id: 'a8c0eebb681234604a226087d41220cb',
+            repo: 'gitcomment',
+            owner: 'mjz-cn',
+            clientID: '658c65c1d7c320c954dc',
+            clientSecret: '6dc7a2602f2f71971609da6b699247f4d5278c05',
+            admin: ["mjz-cn"],
+            createIssueManually: false,
+            distractionFreeMode: false,
+            perPage: 20,
+            pagerDirection: 'last',
+            
+            
+            enableHotKey: true
+        })
+        gitalk.render('comment-container')</script></div></div></div><!--!--><div class="column column-right is-4-tablet is-4-desktop is-4-widescreen  order-3 is-sticky"><div class="card widget" id="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="is-flex" href="#介绍"><span class="mr-2">1</span><span>介绍</span></a><ul class="menu-list"><li><a class="is-flex" href="#关键词"><span class="mr-2">1.1</span><span>关键词</span></a></li></ul></li><li><a class="is-flex" href="#三次握手"><span class="mr-2">2</span><span>三次握手</span></a><ul class="menu-list"><li><a class="is-flex" href="#常见问题"><span class="mr-2">2.1</span><span>常见问题</span></a></li><li><a class="is-flex" href="#队列溢出后的重传"><span class="mr-2">2.2</span><span>队列溢出后的重传</span></a></li></ul></li><li><a class="is-flex" href="#四次挥手"><span class="mr-2">3</span><span>四次挥手</span></a><ul class="menu-list"><li><a class="is-flex" href="#常见问题-1"><span class="mr-2">3.1</span><span>常见问题</span></a></li></ul></li><li><a class="is-flex" href="#传输过程"><span class="mr-2">4</span><span>传输过程</span></a><ul class="menu-list"><li><a class="is-flex" href="#启动"><span class="mr-2">4.1</span><span>启动</span></a></li><li><a class="is-flex" href="#可靠"><span class="mr-2">4.2</span><span>可靠</span></a></li><li><a class="is-flex" href="#流量控制"><span class="mr-2">4.3</span><span>流量控制</span></a></li><li><a class="is-flex" href="#常见问题-2"><span class="mr-2">4.4</span><span>常见问题</span></a></li></ul></li><li><a class="is-flex" href="#调试工具"><span class="mr-2">5</span><span>调试工具</span></a></li></ul></div></div></div></div></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/">MJZ</a><p class="size-small"><span>&copy; 2020 文哲思</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a></p></div><div class="level-end"></div></div></div></footer><script src="https://cdnjs.loli.net/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="https://cdnjs.loli.net/ajax/libs/moment.js/2.22.2/moment-with-locales.min.js"></script><script>moment.locale("zh-CN");</script><script>var IcarusThemeSettings = {
+            site: {
+                url: 'http://yoursite.com',
+                external_link: {"enable":true,"exclude":[]}
+            },
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="https://cdnjs.loli.net/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" defer></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><!--!--><!--!--><script src="https://cdnjs.loli.net/ajax/libs/lightgallery/1.6.8/js/lightgallery.min.js" defer></script><script src="https://cdnjs.loli.net/ajax/libs/justifiedGallery/3.7.0/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
+        });</script></body></html>

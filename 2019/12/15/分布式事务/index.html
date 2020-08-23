@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="generator" content="Hexo 4.2.1"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>分布式事务 - MJZ</title><meta description="ACID和BASEACID是指原子性（Atomic）、一致性（Consistency）、隔离性（Isolation）、持久性（Duration）。  原子性 事务中的所有操作要么都成功要么都失败 一致性 外界访问数据库中的数据时，不会访问到事物的中间状态，只会访问到最终的状态 隔离性 事务之间不会相互影响，避免脏读、幻读给业务带来数据不一致问题 持久性 事务一旦执行成功，其最终状态会被持久化存储下"><meta property="og:type" content="blog"><meta property="og:title" content="分布式事务"><meta property="og:url" content="http://yoursite.com/2019/12/15/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/"><meta property="og:site_name" content="MJZ"><meta property="og:description" content="ACID和BASEACID是指原子性（Atomic）、一致性（Consistency）、隔离性（Isolation）、持久性（Duration）。  原子性 事务中的所有操作要么都成功要么都失败 一致性 外界访问数据库中的数据时，不会访问到事物的中间状态，只会访问到最终的状态 隔离性 事务之间不会相互影响，避免脏读、幻读给业务带来数据不一致问题 持久性 事务一旦执行成功，其最终状态会被持久化存储下"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="http://yoursite.com/assets/img/soft-tx.png"><meta property="article:published_time" content="2019-12-15T12:28:00.000Z"><meta property="article:modified_time" content="2020-08-23T08:18:49.504Z"><meta property="article:author" content="文哲思"><meta property="article:tag" content="笔记"><meta property="twitter:card" content="summary"><meta property="twitter:image" content="/assets/img/soft-tx.png"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"http://yoursite.com/2019/12/15/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/"},"headline":"MJZ","image":["http://yoursite.com/assets/img/soft-tx.png"],"datePublished":"2019-12-15T12:28:00.000Z","dateModified":"2020-08-23T08:18:49.504Z","author":{"@type":"Person","name":"文哲思"},"description":"ACID和BASEACID是指原子性（Atomic）、一致性（Consistency）、隔离性（Isolation）、持久性（Duration）。  原子性 事务中的所有操作要么都成功要么都失败 一致性 外界访问数据库中的数据时，不会访问到事物的中间状态，只会访问到最终的状态 隔离性 事务之间不会相互影响，避免脏读、幻读给业务带来数据不一致问题 持久性 事务一旦执行成功，其最终状态会被持久化存储下"}</script><link rel="canonical" href="http://yoursite.com/2019/12/15/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/"><link rel="icon" href="/img/favicon.svg"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/font-awesome/5.12.0/css/all.min.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/highlight.js/9.12.0/styles/atom-one-light.min.css"><link rel="stylesheet" href="https://fonts.loli.net/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><!--!--><!--!--><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/lightgallery/1.6.8/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/justifiedGallery/3.7.0/css/justifiedGallery.min.css"><script src="https://cdnjs.loli.net/ajax/libs/pace/1.0.2/pace.min.js"></script></head><body class="is-2-column"><nav class="navbar navbar-main"><div class="container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/">MJZ</a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">首页</a><a class="navbar-item" href="/archives">归档</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/2019/12/11/%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99/">参考资料</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-8-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta size-small is-uppercase level is-mobile"><div class="level-left"><div class="level-item has-text-grey" datetime="{date_xml(page.date)}">发布于：2019-12-15</div><span class="level-item"> 文哲思 </span><span class="level-item"><a class="link-muted" href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F/">分布式</a></span><span class="level-item">14 分钟 读完 (大约 2071 个字)</span></div></div><h1 class="title is-3 is-size-4-mobile">分布式事务</h1><div class="content"><h2 id="ACID和BASE"><a href="#ACID和BASE" class="headerlink" title="ACID和BASE"></a>ACID和BASE</h2><p>ACID是指原子性（Atomic）、一致性（Consistency）、隔离性（Isolation）、持久性（Duration）。</p>
+<ul>
+<li>原子性 事务中的所有操作要么都成功要么都失败</li>
+<li>一致性 外界访问数据库中的数据时，不会访问到事物的中间状态，只会访问到最终的状态</li>
+<li>隔离性 事务之间不会相互影响，避免脏读、幻读给业务带来数据不一致问题</li>
+<li>持久性 事务一旦执行成功，其最终状态会被持久化存储下来，不会失效。</li>
+</ul>
+<p>BASE是指基本可用（Base Available）、柔性状态（Soft State）、最终一致性（Eventual Consistency）。</p>
+<ul>
+<li>基本可用 是指分布式系统出现故障时，允许损失部分可用性，保障系统基本可用。</li>
+<li>柔性状态 是指允许系统出现中间状态，而该中间系统并不会影响系统的整体可用性。</li>
+<li>最终一致性 系统在经过一段时间之后，系统中的所有副本最终会达到一致的状态。</li>
+</ul>
+<p>ACID和BASE代表了两种截然相反的设计哲学。ACID是传统数据库常用的设计理念，追求强一致性模型；BASE支持的是高效的分布式数据库，通过牺牲强一致性来获得高可用性。不同的业务场景对数据的一致性要求不一样，因此这两种设计理念也可能会结合在一起使用。</p>
+<a id="more"></a>
+
+<p>分布式系统内通信和单机内通信的最大区别是：单机不会丢信息，而分布式系统可能会丢失。一台机器通过网络向另外一台机器发送消息的结果可能是成功、失败、不知道成没成功，这也是分布式系统数据同步代价高昂的原因。</p>
+<h2 id="共识算法"><a href="#共识算法" class="headerlink" title="共识算法"></a>共识算法</h2><p>副本的一致性。Paxos、Zab、Raft解决的是副本在多节点的同步问题。读写流量走的都是leader。这会产生一些问题：</p>
+<ul>
+<li>如果直接读取follower，可能读取的不是最新数据</li>
+<li>如果为了最新的数据，读写流量都走leader，则leader的负载会远高于follower</li>
+<li>如果出现了网络分区，出现两个leader，则从leader读取的数据也可能不是最新的</li>
+</ul>
+<h2 id="柔性事务如何解决分布式事务问题"><a href="#柔性事务如何解决分布式事务问题" class="headerlink" title="柔性事务如何解决分布式事务问题"></a>柔性事务如何解决分布式事务问题</h2><h3 id="引入日志和补偿机制"><a href="#引入日志和补偿机制" class="headerlink" title="引入日志和补偿机制"></a>引入日志和补偿机制</h3><p>类似传统数据库，柔性事务的原子性也是由日志来保证，例如mysql的事务。事务日志记录事务的状态、参与者。参与者节点记录当前操作的对应的REDO或者UNDO日志。当事务重试、回滚时，可以根据这些日志最终将数据恢复到一致状态。</p>
+<p>为了避免单点故障，事务日志是记录在分布式节点上的。REDO/UNDO日志一般记录在业务数据库（参与者节点）上的，可以保证节点操作与日志记录同时成功或者失败。当事务失败时，可以根据日志记录找回事务当前的执行状态，来决定是重试异常步骤（正向补偿），还是回滚（反向补偿）。</p>
+<h3 id="可靠消息传递"><a href="#可靠消息传递" class="headerlink" title="可靠消息传递"></a>可靠消息传递</h3><p>在分布式环境下，由于“网络危险期”的存在，节点间的消息传递可能出现成功、失败、不知道成功还是失败三种状态。这给分布式事务的处理带来了非常大难题，解决这个问题就需要使节点之间的消息能可靠的进行传递。</p>
+<p>当出现不知道成功还是失败的状态时，只有两种处理方法：1. 重复投递一次（至少一次）；2. 不重复投递 （至多一次）。在分布式事务处理过程中显然不能使用第二种处理方法，不然会丢失数据，就只能选择第一种方法。</p>
+<p>至少一次的处理方法虽然不会丢失数据，但可能会使一条消息被重复处理。这也会造成问题，例如重复添加记录、重复扣款。这就需要处理程序必须实现幂等操作，对一个数据处理一次和多次结果一样。幂等的实现方式有很多种，需要结合业务来实现。如果是插入数据库，可以根据主键来实现幂等；如果是确定性计算并且数据是覆盖操作，则原生就是幂等的；消息里有唯一主键，消息处理程序根据唯一主键来进行去重。</p>
+<h3 id="实现无锁"><a href="#实现无锁" class="headerlink" title="实现无锁"></a>实现无锁</h3><blockquote>
+<p>不是特别明白这个处理方式和分布式事务的关系在哪里，这个处理方式只是为了高性能而已</p>
+</blockquote>
+<p>造成数据库性能和吞吐的瓶颈主要是强事务（传统数据库的事务、阶段提交）带来的资源锁。因此避免事务的加锁是数据库高性能的关键，尤其是长时间事务。无锁是一个解决方法，但是事务隔离是仍然要考虑的一个问题。如果没有事务隔离，可能会出现数据的脏读、幻读，这在业务是不可接受的事情。</p>
+<p>实现事务隔离的方法有多种，选择何种隔离方法应结合业务。</p>
+<ul>
+<li>事务避免进行回滚 当事务异常时，如果不进行回滚也能满足业务的要求，也就是事务的中间状态即使被外界感知到也不会影响到业务的正常流程。由于事务不会回滚，因此不会出现脏读。</li>
+<li>辅助业务变化明细表</li>
+<li>乐观锁</li>
+</ul>
+<blockquote>
+<p>TODO: 对无锁的实现方式和分布式事务之间的关系，以及分布式无锁化的实现方式需要进一步查询资料。</p>
+</blockquote>
+<h2 id="分布式事务的实现方法"><a href="#分布式事务的实现方法" class="headerlink" title="分布式事务的实现方法"></a>分布式事务的实现方法</h2><p>分布式事务的实现可以具体场景的维度来分析，分布式数据库的事务实现方法(tidb、zookeeper)和业务场景上（交易场景）的分布式事务可能就截然不同。</p>
+<p>像tidb、zookeeper要求的是强一致性，中间状态不会被外部感知到，会损耗部分性能来达到数据的强一致性。而业务场景上，对性能要求很高，通常可以将一个大的事务分割成很多小的事务，中间状态可以被外部感知到，只要达到最终的一致性就可以。交易场景下，就可以分割成下单、扣减库存、支付等更细粒度的场景。所以在谈一个分布式事务的时候，应该具体问题具体分析。</p>
+<p>强一致性分布式事务和柔性分布式事务的实现也不是完全对立的。一个大的分布式事务局部也可能会使用强一致性事务，而在全局上还是柔性分布式事务的实现方法。例如一个交易场景中，库存修改和日志的记录就是强一致性的。</p>
+<h2 id="柔性分布式事务的实现"><a href="#柔性分布式事务的实现" class="headerlink" title="柔性分布式事务的实现"></a>柔性分布式事务的实现</h2><h3 id="消息分布式事务"><a href="#消息分布式事务" class="headerlink" title="消息分布式事务"></a>消息分布式事务</h3><p><img src="/assets/img/soft-tx.png" alt=""></p>
+<h3 id="淘宝TXC事务框架"><a href="#淘宝TXC事务框架" class="headerlink" title="淘宝TXC事务框架"></a>淘宝TXC事务框架</h3><hr>
+<p>参考</p>
+<ol>
+<li>企业IT架构转型之道_阿里巴巴中台战略思想与架构实战</li>
+<li><a href="https://pingcap.com/blog-cn/percolator-and-txn/">Percolator 和 TiDB 事务算法</a></li>
+<li><a href="https://pingcap.com/blog-cn/linearizability-and-raft/">线性一致性和 Raft</a></li>
+<li><a href="https://github.com/seata/seata">seata</a></li>
+<li><a href="https://www.sofastack.tech/blog/seata-distributed-transaction-open-source/">蚂蚁分布式事务框架</a></li>
+</ol>
+</div><div class="article-tags size-small mb-4"><span class="mr-2">#</span><a class="link-muted mr-2" rel="tag" href="/tags/%E7%AC%94%E8%AE%B0/">笔记</a></div><!--!--></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/2019/12/16/TCP/"><i class="level-item fas fa-chevron-left"></i><span class="level-item">TCP</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2019/12/15/%E4%B8%9A%E5%8A%A1%E4%B8%8E%E6%8A%80%E6%9C%AF/"><span class="level-item">技术驱动</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><div class="card"><div class="card-content"><h3 class="title is-5">评论</h3><div id="comment-container"></div><link rel="stylesheet" href="https://cdnjs.loli.net/ajax/libs/gitalk/1.6.2/gitalk.css"><script src="https://cdnjs.loli.net/ajax/libs/gitalk/1.6.2/gitalk.min.js"></script><script>var gitalk = new Gitalk({
+            id: '3d499db88afd728f87d606e93d07b7a4',
+            repo: 'gitcomment',
+            owner: 'mjz-cn',
+            clientID: '658c65c1d7c320c954dc',
+            clientSecret: '6dc7a2602f2f71971609da6b699247f4d5278c05',
+            admin: ["mjz-cn"],
+            createIssueManually: false,
+            distractionFreeMode: false,
+            perPage: 20,
+            pagerDirection: 'last',
+            
+            
+            enableHotKey: true
+        })
+        gitalk.render('comment-container')</script></div></div></div><!--!--><div class="column column-right is-4-tablet is-4-desktop is-4-widescreen  order-3 is-sticky"><div class="card widget" id="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="is-flex" href="#ACID和BASE"><span class="mr-2">1</span><span>ACID和BASE</span></a></li><li><a class="is-flex" href="#共识算法"><span class="mr-2">2</span><span>共识算法</span></a></li><li><a class="is-flex" href="#柔性事务如何解决分布式事务问题"><span class="mr-2">3</span><span>柔性事务如何解决分布式事务问题</span></a><ul class="menu-list"><li><a class="is-flex" href="#引入日志和补偿机制"><span class="mr-2">3.1</span><span>引入日志和补偿机制</span></a></li><li><a class="is-flex" href="#可靠消息传递"><span class="mr-2">3.2</span><span>可靠消息传递</span></a></li><li><a class="is-flex" href="#实现无锁"><span class="mr-2">3.3</span><span>实现无锁</span></a></li></ul></li><li><a class="is-flex" href="#分布式事务的实现方法"><span class="mr-2">4</span><span>分布式事务的实现方法</span></a></li><li><a class="is-flex" href="#柔性分布式事务的实现"><span class="mr-2">5</span><span>柔性分布式事务的实现</span></a><ul class="menu-list"><li><a class="is-flex" href="#消息分布式事务"><span class="mr-2">5.1</span><span>消息分布式事务</span></a></li><li><a class="is-flex" href="#淘宝TXC事务框架"><span class="mr-2">5.2</span><span>淘宝TXC事务框架</span></a></li></ul></li></ul></div></div></div></div></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/">MJZ</a><p class="size-small"><span>&copy; 2020 文哲思</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a></p></div><div class="level-end"></div></div></div></footer><script src="https://cdnjs.loli.net/ajax/libs/jquery/3.3.1/jquery.min.js"></script><script src="https://cdnjs.loli.net/ajax/libs/moment.js/2.22.2/moment-with-locales.min.js"></script><script>moment.locale("zh-CN");</script><script>var IcarusThemeSettings = {
+            site: {
+                url: 'http://yoursite.com',
+                external_link: {"enable":true,"exclude":[]}
+            },
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="https://cdnjs.loli.net/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" defer></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><!--!--><!--!--><script src="https://cdnjs.loli.net/ajax/libs/lightgallery/1.6.8/js/lightgallery.min.js" defer></script><script src="https://cdnjs.loli.net/ajax/libs/justifiedGallery/3.7.0/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
+        });</script></body></html>
