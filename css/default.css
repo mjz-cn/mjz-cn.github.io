@@ -11411,3 +11411,12 @@ figure.highlight .section {
     padding: 1.5rem 1rem;
   }
 }
+.navbar-item {
+  color: #fff;
+  font-size: 16px; /*字体大小 18 像素*/
+}
+.navbar-main .navbar-menu .navbar-item:hover,
+.navbar-main .navbar-menu .navbar-item.is-active {
+  color: #ccc;
+  background-color: #24292f !important;
+}
